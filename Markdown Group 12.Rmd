@@ -1,0 +1,487 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+<h1 id="0"></h1>
+
+---
+title: "Online sport gambling Descriptive analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load myData, include=FALSE}
+library(readr)
+library(dplyr)
+library(plotly)
+library(tidyr)
+library(rmarkdown)
+library(markdown)
+library(knitr)
+library(tinytex)
+basetable <- read_csv("C:/Users/schauhan/Downloads/Final R Group 12/basetable.csv",
+                      col_types = cols(RegDate = col_date(format = "%Y-%m-%d")))
+```
+
+
+####GROUP MEMBER: SIDDHANT CHAUHAN / SHIVAM SARIN / YEN CHUN, LIU
+
+
+<h1 id="Introduction">Introduction</h1>
+
+The goal of this report is to provide overall picture on the customers and insights. For this analysis report used four raw datasets plus information provided in the [codebook](https://iesegnet-my.sharepoint.com/:b:/g/personal/yenchun_liu_ieseg_fr/EWqOitNVhrJIj3aZHM08tIcBQDhdNKcSbmlHtTILgMLZnw?e=ba6qV5) to generate basetable. Charts are mainly analysis with RFM(Recency, Frequency, Monetary) and others like location etc. The Chart list below are some demonstrate of possible overview analysis using basetable through [R shiny](https://shivamsarin.shinyapps.io/R_Grp_12/). R shinny provides flexibility for users to choose from five variables(Gender, Country, Product ID, Application ID, User ID, Language).
+
+
+<h2 id="Chart list">Chart list</h2>
+
+  [1. Unique Users per Products](#1)
+
+  [2. Frequency Plot for Poker Chips by months](#2)
+
+  [3. Frequency Plot for User Aggregation by months](#3)
+
+  [4. Frequency Plot - Application used](#4)
+
+  [5. Frequency Plot - Age](#5)
+
+  [6. Unique Users per Languages](#6)
+
+  [7. Pie Chart of Churn](#7)
+
+  [8. Unique Users per Country](#8)
+
+  [9. Frequency Plot - Length of relationship (Days)](#9)
+
+  [10.Unique Users per Gender](#10)
+
+  [11.Average number of days between betting sessions - Poker Chips](#11)
+
+  [12.Average number of days between betting sessions - User Aggregation](#12)
+
+  [13.Product wise - Profit vs Loss](#13)
+
+  [14.Product wise - Profit% vs Loss%](#14)
+
+  [15.Winnings Vs Profit Vs Stakes](#15)
+
+  [16.Freq vs Profit for User Aggregation](#16)
+
+  [17.Stakes Vs Profit](#17)
+
+
+
+<h3 id="1">1. Unique Users per Products</h3>
+
+```{r Unique Users per Products, echo=FALSE, cache=TRUE}
+# temp <- subset(basetable, is.na(basetable$ProductID))
+product_wise_players <- basetable %>%
+  group_by(ProductID) %>%
+  summarise(unique_players = n_distinct(USERID))
+product_wise_players <- product_wise_players[complete.cases(product_wise_players),]
+
+product_wise_players_PC <- unique(basetable[,c("USERID","PC_Recency")])
+product_wise_players_PC <- sum(!is.na(product_wise_players_PC$PC_Recency))
+
+product_wise_players <- rbind(product_wise_players,c("Poker_Chips",product_wise_players_PC))
+product_wise_players$unique_players <- as.numeric(product_wise_players$unique_players)
+
+product_wise_players %>%
+  group_by(ProductID) %>%
+  summarize(unique_players = unique_players) %>%
+  plot_ly(labels = ~ProductID, values = ~unique_players) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "",  showlegend = F,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+rm(product_wise_players_PC)
+rm(product_wise_players)
+
+```
+[Back to list](#Chart list)
+
+
+<h3 id="2">2. Frequency Plot for Poker Chips by months</h3>
+
+```{r Frequency Plot for Poker Chips by months, echo=FALSE, cache=TRUE}
+############ Frequency Plot for Poker Chips by months ###########
+
+freq_by_months <- unique(basetable[,c("USERID","PC_Freq_sessions_first3Months",
+                                      "PC_Freq_sessions_mid3Months",
+                                      "PC_Freq_sessions_last2Months")])
+names(freq_by_months) <- c("USERID","First 3 Months",
+                             "Mid 3 Months",
+                             "Last 2 Months")
+freq_by_months <- gather(freq_by_months,Freq,value,-USERID)
+freq_by_months <- freq_by_months[complete.cases(freq_by_months),]
+freq_by_months$value <- as.character(freq_by_months$value)
+
+x = factor(freq_by_months$Freq,c("USERID","First 3 Months",
+                                 "Mid 3 Months",
+                                 "Last 2 Months"))
+y = freq_by_months$value
+
+plot_ly(y=y, x=x, histfunc='sum', type = "histogram") %>%
+  layout(title = "",
+         yaxis=list(type='linear'),
+         xaxis=list(tickangle = 315))
+```
+[Back to list](#Chart list)
+
+<h3 id="3">3. Frequency Plot for User Aggregation by months</h3>
+```{r Frequency Plot for User Aggregation by months, echo=FALSE, cache=TRUE}
+############ Frequency Plot for User Aggregation by months ###########
+
+freq_by_months <- unique(basetable[,c("USERID","UA_Freq_bets_first3Months",
+                                      "UA_Freq_bets_mid3Months",
+                                      "UA_Freq_bets_last2Months")])
+names(freq_by_months) <- c("USERID","First 3 Months",
+                           "Mid 3 Months",
+                           "Last 2 Months")
+freq_by_months <- gather(freq_by_months,Freq,value,-USERID)
+freq_by_months <- freq_by_months[complete.cases(freq_by_months),]
+freq_by_months$value <- as.character(freq_by_months$value)
+
+x = factor(freq_by_months$Freq,c("USERID","First 3 Months",
+                                 "Mid 3 Months",
+                                 "Last 2 Months"))
+y = freq_by_months$value
+
+plot_ly(y=y, x=x, histfunc='sum', type = "histogram") %>%
+  layout(title = "",
+         yaxis=list(type='linear'),
+         xaxis=list(tickangle = 315))
+
+rm(freq_by_months)
+rm(x)
+rm(y)
+```
+[Back to list](#Chart list)
+
+
+<h3 id="4">4. Frequency Plot - Application used</h3>
+```{r Frequency Plot - Application used, echo=FALSE, cache=TRUE}
+############ Frequency Plot for Application used ###########
+
+freq_by_application <- unique(basetable[,c("USERID","ApplicationID")])
+freq_by_application <- freq_by_application[complete.cases(freq_by_application),]
+
+freq_for_ordered_names <- freq_by_application %>%
+  group_by(ApplicationID) %>%
+  summarise(freq = n()) %>%
+  arrange(desc(freq))
+
+freq_by_application$value <- as.character(1)
+
+x = factor(freq_by_application$ApplicationID, levels = freq_for_ordered_names$ApplicationID)
+y = freq_by_application$value
+
+plot_ly(y=y, x=x, histfunc='sum', type = "histogram") %>%
+  layout(title = "",
+         yaxis=list(type='linear'),
+         xaxis=list(tickangle = 315))
+
+rm(freq_by_application)
+rm(freq_for_ordered_names)
+rm(x)
+rm(y)
+
+```
+[Back to list](#Chart list)
+
+
+<h3 id="5">5. Frequency Plot - Age</h3>
+```{r Frequency Plot - Age, echo=FALSE, cache=TRUE}
+############ Frequency Plot for Age ###########
+
+freq_by_age <- unique(basetable[,c("USERID","AGE")])
+freq_by_age <- freq_by_age[complete.cases(freq_by_age),]
+
+x = freq_by_age$AGE
+
+plot_ly(x=x, type = "histogram") %>%
+  layout(title = "")
+
+rm(freq_by_age)
+rm(x)
+
+```
+[Back to list](#Chart list)
+
+
+<h3 id="6">6. Unique Users per Languages</h3>
+```{r Unique Users per Languages, echo=FALSE, cache=TRUE}
+#################### Pie chart Languages #################
+
+language_wise_players <- basetable %>%
+  group_by(Language) %>%
+  summarise(unique_players = n_distinct(USERID))
+
+language_wise_players <- language_wise_players[complete.cases(language_wise_players),]
+
+language_wise_players %>%
+  group_by(Language) %>%
+  summarize(unique_players = unique_players) %>%
+  plot_ly(labels = ~Language, values = ~unique_players) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "",  showlegend = F,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+rm(language_wise_players)
+```
+[Back to list](#Chart list)
+
+
+<h3 id="7">7. Pie Chart of Churn</h3>
+```{r Pie chart Churn, echo=FALSE, cache=TRUE}
+#################### Pie chart Churn #################
+
+Churn_wise_players <- basetable %>%
+  group_by(Churn) %>%
+  summarise(players = n())
+
+Churn_wise_players <- Churn_wise_players[complete.cases(Churn_wise_players),]
+
+Churn_wise_players %>%
+  group_by(Churn) %>%
+  summarize(players = players) %>%
+  plot_ly(labels = ~Churn, values = ~players) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "",  showlegend = F,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+rm(Churn_wise_players)
+```
+[Back to list](#Chart list)
+
+
+<h3 id="8">8. Unique Users per Country</h3>
+If it does not appear please use browser to view.
+```{r Unique Users per Country, echo=FALSE, cache=TRUE}
+#################### Map Country ####################
+
+
+freq_by_country <- unique(basetable[,c("USERID","Country")])
+freq_by_country <- freq_by_country[complete.cases(freq_by_country),]
+
+freq_by_country_names <- freq_by_country %>%
+  group_by(Country) %>%
+  summarise(freq = n()) %>%
+  arrange(desc(freq))
+
+df <- read.csv('https://raw.githubusercontent.com/plotly/datasets/master/2014_world_gdp_with_codes.csv')
+
+freq_by_country_names <- merge(x=freq_by_country_names, y= df,by.x = c("Country"),
+                         by.y = c("COUNTRY"), all.x = T)
+
+# light grey boundaries
+l <- list(color = toRGB("grey"), width = 0.5)
+
+# specify map projection/options
+g <- list(
+  showframe = FALSE,
+  showcoastlines = FALSE,
+  projection = list(type = 'Mercator')
+)
+
+plot_geo(freq_by_country_names) %>%
+  add_trace(
+    z = ~freq, color = ~freq, colors = 'Blues',
+    text = ~Country, locations = ~CODE, marker = list(line = l)
+  ) %>%
+  colorbar(title = 'Frequency') %>%
+  layout(
+    title = '',
+    geo = g
+  )
+rm(list=setdiff(ls(), "basetable"))
+```
+[Back to list](#Chart list)
+
+
+<h3 id="9">9. Frequency Plot - Length of relationship (Days)</h3>
+```{r Frequency Plot for Age, echo=FALSE, cache=TRUE}
+############ Frequency Plot for Age ###########
+
+freq_by_lor <- unique(basetable[,c("USERID","UA_Lor_firstPlay")])
+freq_by_lor <- freq_by_lor[complete.cases(freq_by_lor),]
+
+x = freq_by_lor$UA_Lor_firstPlay
+
+plot_ly(x=x, type = "histogram") %>%
+  layout(title = "")
+
+rm(freq_by_lor)
+rm(x)
+```
+[Back to list](#Chart list)
+
+
+<h3 id="10">10. Unique Users per Gender</h3>
+```{r Pie chart Gender, echo=FALSE, cache=TRUE}
+#################### Pie chart Gender #################
+
+Gender_wise_players <- basetable %>%
+  group_by(Gender) %>%
+  summarise(players = n_distinct(USERID))
+
+Gender_wise_players <- Gender_wise_players[complete.cases(Gender_wise_players),]
+
+Gender_wise_players %>%
+  group_by(Gender) %>%
+  summarize(players = players) %>%
+  plot_ly(labels = ~Gender, values = ~players) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "",  showlegend = F,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+rm(Gender_wise_players)
+```
+[Back to list](#Chart list)
+
+
+<h3 id="11">11. Average number of days between betting sessions - Poker Chips</h3>
+```{r Frequency Plot for Poker Chips - IPT, echo=FALSE, cache=TRUE}
+############ Frequency Plot for Poker Chips - IPT ###########
+
+freq_by_IPT <- unique(basetable[,c("USERID","PC_IPT_mean")])
+library(pracma)
+freq_by_IPT$PC_IPT_mean <- ceil(freq_by_IPT$PC_IPT_mean)
+freq_by_IPT <- freq_by_IPT[complete.cases(freq_by_IPT),]
+
+x = freq_by_IPT$PC_IPT_mean
+
+plot_ly(x=x, type = "histogram") %>%
+  layout(title = "")
+
+rm(freq_by_IPT)
+rm(x)
+```
+[Back to list](#Chart list)
+
+
+<h3 id="12">12. Average number of days between betting sessions - User Aggregation</h3>
+```{r Frequency Plot for User Aggregation - IPT, echo=FALSE, cache=TRUE}
+############ Frequency Plot for User Aggregation - IPT ###########
+
+freq_by_IPT <- unique(basetable[,c("USERID","UA_IPT_mean")])
+freq_by_IPT$UA_IPT_mean <- ceil(freq_by_IPT$UA_IPT_mean)
+freq_by_IPT <- freq_by_IPT[complete.cases(freq_by_IPT),]
+
+x = freq_by_IPT$UA_IPT_mean
+
+plot_ly(x=x, type = "histogram") %>%
+  layout(title = "")
+
+rm(freq_by_IPT)
+rm(x)
+```
+[Back to list](#Chart list)
+
+
+<h3 id="13">13. Product wise - Profit vs Loss</h3>
+```{r Product wise - Profit vs Loss, echo=FALSE, cache=TRUE}
+######Product wise - Profit vs Loss#######
+profit_loss <- unique(basetable[,c("USERID","ProductID","UA_Mon_profit")])
+profit_loss$Mon <- ifelse(profit_loss$UA_Mon_profit > 0,"Profit","Loss")
+profit_loss$UA_Mon_profit <- abs(profit_loss$UA_Mon_profit)
+profit_loss <- profit_loss[complete.cases(profit_loss),]
+
+profit_loss1 <- profit_loss %>%
+  group_by(ProductID) %>%
+  summarise(Profit = sum(UA_Mon_profit[Mon=="Profit"],na.rm = T),
+            Loss = sum(UA_Mon_profit[Mon=="Loss"],na.rm = T),
+            Profit_Percentage = Profit*100/(Profit+Loss),
+            Loss_Percentage = Loss*100/(Profit+Loss))
+
+profit_loss <- unique(basetable[,c("USERID","PC_Mon_profit")])
+profit_loss$Mon <- ifelse(profit_loss$PC_Mon_profit > 0,"Profit","Loss")
+profit_loss$PC_Mon_profit <- abs(profit_loss$PC_Mon_profit)
+
+profit_loss2 <- profit_loss %>%
+  summarise(Profit = sum(PC_Mon_profit[Mon=="Profit"],na.rm = T),
+            Loss = sum(PC_Mon_profit[Mon=="Loss"],na.rm = T),
+            Profit_Percentage = Profit*100/(Profit+Loss),
+            Loss_Percentage = Loss*100/(Profit+Loss))
+profit_loss2$ProductID <- "Poker Chips"
+profit_loss <- rbind(profit_loss1,profit_loss2)
+
+rm(profit_loss1)
+rm(profit_loss2)
+
+profit_loss <- profit_loss %>%
+  group_by(ProductID) %>%
+  arrange(desc(Profit))
+
+x = factor(profit_loss$ProductID, levels = profit_loss$ProductID)
+y1 = profit_loss$Loss
+y2 = profit_loss$Profit
+
+plot_ly(x = ~x, y = ~y1, type = 'bar', name = 'Loss') %>%
+  add_trace(y = ~y2, name = 'Profit') %>%
+  layout(title = '',
+    yaxis = list(title = 'Value'), barmode = 'stack',
+         xaxis=list(title = 'Products',tickangle = 315))
+```
+[Back to list](#Chart list)
+
+
+<h3 id="14">14. Product wise - Profit% vs Loss%</h3>
+```{r Product wise - Profit% vs Loss%, echo=FALSE, cache=TRUE}
+profit_loss <- profit_loss %>%
+  group_by(ProductID) %>%
+  arrange(desc(Profit_Percentage))
+
+x = factor(profit_loss$ProductID, levels = profit_loss$ProductID)
+
+y1 = profit_loss$Loss_Percentage
+y2 = profit_loss$Profit_Percentage
+
+plot_ly(x = ~x, y = ~y1, type = 'bar', name = 'Loss %') %>%
+  add_trace(y = ~y2, name = 'Profit %') %>%
+  layout(title = '',
+          yaxis = list(title = 'Value %'), barmode = 'stack',
+         xaxis=list(title = 'Products',tickangle = 315))
+```
+[Back to list](#Chart list)
+
+<h3 id="15">15. Winnings Vs Profit Vs Stakes</h3>
+```{r Winnings Vs Profit Vs Stakes, echo=FALSE, cache=TRUE}
+######### Winnings Vs Profit Vs Stakes ##########
+plot_ly(basetable, x =1:nrow(basetable), y = basetable$UA_rMon_profit, name = 'Profit',type = 'scatter', mode = 'lines')%>%
+  add_trace(y = basetable$UA_rMon_wins, name = ' Wins', mode = 'lines') %>%
+  add_trace(y = basetable$UA_rMon_Stakes, name = 'Stakes', mode = 'lines')  %>%
+  layout(title="")
+
+```
+[Back to list](#Chart list)
+
+<h3 id="16">16. Freq vs Profit for User Aggregation</h3>
+```{r Freq vs Profit for User Aggregation, echo=FALSE, warning=FALSE, cache=TRUE}
+##############Bets Vs Profits/ User ID for UA ######################
+plot_ly(basetable, x = basetable$UA_rFreq_bets, y =basetable$UA_rMon_profit, text = basetable$USERID, type = 'scatter', mode = 'markers')%>%
+  layout(title="")
+```
+[Back to list](#Chart list)
+
+
+<h3 id="17">17. Stakes Vs Profit</h3>
+```{r Stakes Vs Profit, echo=FALSE, cache=TRUE}
+############# Poker Profit vs Freq vs Buy######################3
+plot_ly(basetable, x =1:nrow(basetable), y =basetable$PC_rMon_profit, name = 'Profit',type = 'scatter', mode = 'lines')%>%
+    add_trace(y = basetable$PC_rMon_Buy, name = 'Stakes', mode = 'lines')  %>%
+  layout(title="")
+rm(basetable)
+rm(x)
+```
+
+[Back to list](#Chart list)
+
+[Back to top](#0)
